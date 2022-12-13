@@ -1,0 +1,5 @@
+2003 - Ruby 1.8 released.
+2007 - Ruby 1.9 released.
+2013 - Ruby 2.0 released.
+2013 - Ruby 2.1 released.
+2014 - Ruby 2.2 released.
