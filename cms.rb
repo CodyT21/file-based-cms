@@ -25,16 +25,23 @@ def load_file_content(file_path)
   end
 end
 
-root = File.expand_path('..', __FILE__)
+def data_path
+  if ENV["RACK_ENV"] == "test"
+    File.expand_path('../test/data', __FILE__)
+  else
+    File.expand_path('../data', __FILE__)
+  end
+end
 
 get '/' do
-  @files = Dir.glob(root + '/data/*').map { |file_path| File.basename(file_path) }
+  pattern = File.join(data_path, '*')
+  @files = Dir.glob(pattern).map { |file_path| File.basename(file_path) }
 
   erb :index
 end
 
 get '/:filename' do
-  file_path = root + '/data/' + params[:filename]
+  file_path = File.join(data_path, params[:filename])
 
   if File.file?(file_path)
     load_file_content(file_path)
@@ -45,7 +52,7 @@ get '/:filename' do
 end
 
 post '/:filename' do
-  file_path = root + '/data/' + params[:filename]
+  file_path = File.join(data_path, params[:filename])
 
   File.write(file_path, params[:content])
   
@@ -54,7 +61,7 @@ post '/:filename' do
 end
 
 get '/:filename/edit' do
-  file_path = root + '/data/' + params[:filename]
+  file_path = File.join(data_path, params[:filename])
 
   if File.file?(file_path)
     @filename = params[:filename]
