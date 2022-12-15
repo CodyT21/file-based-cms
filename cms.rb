@@ -21,7 +21,7 @@ def load_file_content(file_path)
     headers['Content-Type'] = 'text/plain'
     content
   when '.md'
-    render_markdown(content)
+    erb render_markdown(content)
   end
 end
 
@@ -46,7 +46,7 @@ get '/:filename' do
   if File.file?(file_path)
     load_file_content(file_path)
   else
-    session[:error] = "#{params[:filename]} does not exist"
+    session[:message] = "#{params[:filename]} does not exist"
     redirect '/'
   end
 end
@@ -56,7 +56,7 @@ post '/:filename' do
 
   File.write(file_path, params[:content])
   
-  session[:success] = "#{params[:filename]} has been updated."
+  session[:message] = "#{params[:filename]} has been updated."
   redirect '/'
 end
 
@@ -69,7 +69,7 @@ get '/:filename/edit' do
 
     erb :edit
   else
-    session[:error] = "#{params[:filename]} does not exist"
+    session[:message] = "#{params[:filename]} does not exist"
     redirect '/'
   end
 end
