@@ -8,6 +8,19 @@
       </form>
     </li>
   <% end %>
-
-  <a href="/new">New Document</a>
 </ul>
+
+  <a href="/new"><button>New Document</button></a>
+
+  <div>
+    <% if !session[:user_id] %>
+      <p class="user-status"><a href="/users/signin"><button>Sign In</button></a></p>
+    <% else %>
+      <form class="inline" action="/users/signout" method="post">
+        <p class="user-status">
+          Signed in as <%= session[:user_id] %>.
+          <button type="submit">Sign Out</button>
+        </p>
+      </form>
+    <% end %>
+  </div>

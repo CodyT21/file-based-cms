@@ -33,6 +33,7 @@ def data_path
   end
 end
 
+# Render index page
 get '/' do
   pattern = File.join(data_path, '*')
   @files = Dir.glob(pattern).map { |file_path| File.basename(file_path) }
@@ -40,10 +41,12 @@ get '/' do
   erb :index
 end
 
+# Render new document page
 get '/new' do
   erb :new
 end
 
+# Create a new document
 post '/create' do
   new_filename = params[:new_filename].to_s
 
@@ -60,6 +63,39 @@ post '/create' do
   end
 end
 
+# Render signin page
+get '/users/signin' do
+  if !session[:user_id]
+    erb :login
+  else
+    redirect '/'
+  end
+end
+
+# Sign user into site
+post '/users/signin' do
+  username = params[:user_id].to_s
+  password = params[:password].to_s
+
+  if username == 'admin' && password == 'secret'
+    session[:user_id] = params[:user_id]
+    session[:message] = 'Welcome!'
+    redirect '/'
+  else
+    session[:message] = 'Invalid credentials.'
+    status 422
+    erb :login
+  end
+end
+
+# Sign out user
+post '/users/signout' do
+  session.delete(:user_id)
+  session[:message] = "You have been signed out."
+  redirect '/'
+end
+
+# Display a file
 get '/:filename' do
   file_path = File.join(data_path, params[:filename])
 
@@ -71,6 +107,7 @@ get '/:filename' do
   end
 end
 
+# Edit a file
 post '/:filename' do
   file_path = File.join(data_path, params[:filename])
 
@@ -80,6 +117,7 @@ post '/:filename' do
   redirect '/'
 end
 
+# Render file edit page
 get '/:filename/edit' do
   file_path = File.join(data_path, params[:filename])
 
@@ -94,6 +132,7 @@ get '/:filename/edit' do
   end
 end
 
+# Delete a document
 post '/:filename/delete' do
   file_path = File.join(data_path, params[:filename])
   File.delete(file_path)
