@@ -4,6 +4,7 @@ require 'sinatra/content_for'
 require 'tilt/erubis'
 require 'redcarpet'
 require 'yaml'
+require 'bcrypt'
 
 configure do
   enable :sessions
@@ -18,6 +19,17 @@ def load_user_credentials
                end
   
   YAML.load_file(File.join(users_path, 'users.yml'))
+end
+
+def valid_credentials?(user_id, password)
+  credentials = load_user_credentials
+
+  if credentials.key?(user_id)
+    bcrypt_password = BCrypt::Password.new(credentials[user_id])
+    bcrypt_password == password
+  else
+    false
+  end
 end
 
 def render_markdown(text)
@@ -101,8 +113,9 @@ end
 post '/users/signin' do
   credentials = load_user_credentials
   user_id = params[:user_id]
+  password = params[:password]
 
-  if credentials[user_id] == params[:password]
+  if valid_credentials?(user_id, password)
     session[:user_id] = params[:user_id]
     session[:message] = 'Welcome!'
     redirect '/'
