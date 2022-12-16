@@ -33,6 +33,17 @@ def data_path
   end
 end
 
+def user_signed_in?
+  session.key?(:user_id)
+end
+
+def require_user_signin
+  unless user_signed_in?
+    session[:message] = 'You must be signed in to perform that action.'
+    redirect '/'
+  end
+end
+
 # Render index page
 get '/' do
   pattern = File.join(data_path, '*')
@@ -43,11 +54,14 @@ end
 
 # Render new document page
 get '/new' do
+  require_user_signin
   erb :new
 end
 
 # Create a new document
 post '/create' do
+  require_user_signin
+
   new_filename = params[:new_filename].to_s
 
   if new_filename.size == 0
@@ -109,6 +123,8 @@ end
 
 # Edit a file
 post '/:filename' do
+  require_user_signin
+
   file_path = File.join(data_path, params[:filename])
 
   File.write(file_path, params[:content])
@@ -119,6 +135,8 @@ end
 
 # Render file edit page
 get '/:filename/edit' do
+  require_user_signin
+    
   file_path = File.join(data_path, params[:filename])
 
   if File.file?(file_path)
@@ -134,6 +152,8 @@ end
 
 # Delete a document
 post '/:filename/delete' do
+  require_user_signin
+
   file_path = File.join(data_path, params[:filename])
   File.delete(file_path)
 

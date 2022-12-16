@@ -27,6 +27,10 @@ class CMSTest < Minitest::Test
     last_request.env['rack.session']
   end
 
+  def admin_session
+    { 'rack.session' => { user_id: 'admin' } }
+  end
+
   def app
     Sinatra::Application
   end
@@ -69,20 +73,25 @@ class CMSTest < Minitest::Test
   def test_edit_document
     create_document 'changes.txt', 'document content'
 
-    get '/changes.txt'
-    document_content = last_response.body
+    get '/changes.txt/edit', {}, admin_session
+    assert_equal 200, last_response.status
+    assert_includes last_response.body, '<textarea'
+    assert_includes last_response.body, %q(<button type="submit")
+  end
+
+  def test_edit_document_signed_out
+    create_document 'changes.txt', 'document content'
 
     get '/changes.txt/edit'
-    assert_equal 200, last_response.status
-    assert_equal "text/html;charset=utf-8", last_response['Content-Type']
-    assert_includes last_response.body, '<textarea'
-    assert_includes last_response.body, document_content
+    assert_equal 302, last_response.status
+    assert_equal 'You must be signed in to perform that action.', session[:message]
   end
+    
 
   def test_updating_document
     create_document 'changes.txt', 'document content'
 
-    post '/changes.txt', content: 'new text'
+    post '/changes.txt', {content: 'new text'}, admin_session
     assert_equal 302, last_response.status
     assert_equal 'changes.txt has been updated.', session[:message]
     
@@ -91,15 +100,27 @@ class CMSTest < Minitest::Test
     assert_includes last_response.body, 'new text'
   end
 
+  def test_updating_document_signed_out
+    post '/changes.txt', {content: 'new text'}
+    assert_equal 302, last_response.status
+    assert_equal 'You must be signed in to perform that action.', session[:message]
+  end
+
   def test_new_document_form
-    get '/new'
+    get '/new', {}, admin_session
     assert_equal 200, last_response.status
     assert_includes last_response.body, '<input'
     assert_includes last_response.body, %q(<input type="submit")
   end
 
+  def test_new_document_form_signed_out
+    get '/new'
+    assert_equal 302, last_response.status
+    assert_equal 'You must be signed in to perform that action.', session[:message]
+  end
+
   def test_create_new_document
-    post '/create', new_filename: 'new_doc.txt'
+    post '/create', {new_filename: 'new_doc.txt'}, admin_session
     assert_equal 302, last_response.status
     assert_equal 'new_doc.txt was successfully created.', session[:message]
 
@@ -107,8 +128,14 @@ class CMSTest < Minitest::Test
     assert_includes last_response.body, 'new_doc.txt'
   end
 
+  def test_create_new_document_signed_out
+    post '/create', {new_filename: 'new_doc.txt'}
+    assert_equal 302, last_response.status
+    assert_equal 'You must be signed in to perform that action.', session[:message]
+  end
+
   def test_create_new_document_no_filename
-    post '/create', new_filename: ''
+    post '/create', {new_filename: ''}, admin_session
     assert_equal 422, last_response.status
     assert_includes last_response.body, 'A name is required.'
   end
@@ -116,12 +143,20 @@ class CMSTest < Minitest::Test
   def test_delete_document
     create_document 'new_doc.txt'
 
-    post 'new_doc.txt/delete'
+    post 'new_doc.txt/delete', {}, admin_session
     assert_equal 302, last_response.status
     assert_equal 'new_doc.txt has been deleted.', session[:message]
 
     get '/'
     refute_includes last_response.body, %q(href="/new_doc.txt")
+  end
+
+  def test_delete_document_signed_out
+    create_document 'new_doc.txt'
+
+    post 'new_doc.txt/delete'
+    assert_equal 302, last_response.status
+    assert_equal 'You must be signed in to perform that action.', session[:message]
   end
 
   def test_signin_form
@@ -148,13 +183,13 @@ class CMSTest < Minitest::Test
   end
 
   def test_signout
-    get '/', {}, {'rack.session' => { user_id: 'admin' }}
+    get '/', {}, admin_session
     assert_includes last_response.body, 'Signed in as admin'
 
     post '/users/signout'
     assert_equal 'You have been signed out.', session[:message]
 
-    get last_response["Location"]
+    get last_response['Location']
     assert_nil session[:user_id]
     assert_includes last_response.body, 'Sign In'
   end
