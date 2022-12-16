@@ -1,12 +1,23 @@
-require "sinatra"
-require "sinatra/reloader"
-require "sinatra/content_for"
-require "tilt/erubis"
+require 'sinatra'
+require 'sinatra/reloader'
+require 'sinatra/content_for'
+require 'tilt/erubis'
 require 'redcarpet'
+require 'yaml'
 
 configure do
   enable :sessions
   set :session_secret, 'secret'
+end
+
+def load_user_credentials
+  users_path = if ENV['RACK_ENV'] == 'test'
+                 File.expand_path('../test/users', __FILE__)
+               else
+                 File.expand_path('../users', __FILE__)
+               end
+  
+  YAML.load_file(File.join(users_path, 'users.yml'))
 end
 
 def render_markdown(text)
@@ -26,7 +37,7 @@ def load_file_content(file_path)
 end
 
 def data_path
-  if ENV["RACK_ENV"] == "test"
+  if ENV['RACK_ENV'] == 'test'
     File.expand_path('../test/data', __FILE__)
   else
     File.expand_path('../data', __FILE__)
@@ -88,10 +99,10 @@ end
 
 # Sign user into site
 post '/users/signin' do
-  username = params[:user_id].to_s
-  password = params[:password].to_s
+  credentials = load_user_credentials
+  user_id = params[:user_id]
 
-  if username == 'admin' && password == 'secret'
+  if credentials[user_id] == params[:password]
     session[:user_id] = params[:user_id]
     session[:message] = 'Welcome!'
     redirect '/'
